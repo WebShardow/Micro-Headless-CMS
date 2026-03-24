@@ -1,7 +1,9 @@
 import { prisma } from "./prisma";
 import type { SiteConfig as SiteConfigModel } from "@prisma/client";
 
-export type SiteConfig = SiteConfigModel;
+export type SiteConfig = SiteConfigModel & {
+  discordUrl: string;
+};
 
 const defaults = {
   siteName: "Micro Headless CMS",
