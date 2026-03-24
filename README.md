@@ -9,12 +9,13 @@
 *   **📦 Module System (.zip):** รองรับนักพัฒนาในการสร้างส่วนขยาย (Plugins) และส่งขึ้นระบบผ่านไฟล์ .zip
 *   **📱 Headless Native:** ข้อมูลทุกส่วนทั้ง Projects, Pages, Config ถูกเสิร์ฟในรูปแบบ JSON API 100%
 *   **🗄️ Database Management:** ระบบสำรองและกู้คืนฐานข้อมูล (Backup & Restore) ได้ด้วยคลิกเดียว
+*   **💬 Discord Community:** เชื่อมต่อกับนักพัฒนาและทีมงานผ่าน Discord ได้ทันทีจากปุ่มในหน้าแรก
 *   **🖼️ Media Manager:** คลังสื่อส่วนตัวสำหรับอัปโหลดและจัดการรูปภาพของทั้งเว็บไซต์
 
 ## 🛠️ เทคโนโลยีที่ใช้ (Tech Stack)
-*   **Frontend:** Next.js (App Router) + Tailwind CSS 4 (Beta)
+*   **Frontend:** Next.js (App Router) + Tailwind CSS 4
 *   **Backend:** Next.js Server Actions & Route Handlers
-*   **Database:** Prisma ORM / SQLite
+*   **Database:** Prisma ORM / PostgreSQL (or SQLite/Neon)
 *   **Fonts:** Google Fonts Integration (Auto-load)
 
 ## 📂 การเริ่มต้นใช้งานสำหรับนักพัฒนา
@@ -25,4 +26,5 @@
 ---
 
 *เอกสารฉบับทางการ: [MANUAL.md](./MANUAL.md)* 📘
-*Project URL: [https://github.com/GridsMicro/Micro-Headless-CMS](https://github.com/GridsMicro/Micro-Headless-CMS)*
+*Project URL: [https://github.com/WebShardow/Micro-Headless-CMS](https://github.com/WebShardow/Micro-Headless-CMS)*
+*Discord: [https://discord.gg/Meywv7MXJd](https://discord.gg/Meywv7MXJd)*

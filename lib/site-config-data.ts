@@ -39,6 +39,8 @@ const defaults = {
   footerCopyright: "© 2024 My Portfolio",
   footerBgColor: "#1e293b",
   footerTextColor: "#94a3b8",
+  // Communication
+  discordUrl: "https://discord.gg/Meywv7MXJd",
 };
 
 export async function getSiteConfig(): Promise<SiteConfig> {

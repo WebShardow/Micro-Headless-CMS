@@ -10,6 +10,7 @@ type SiteConfig = {
   language: string;
   timezone: string;
   footerCopyright: string;
+  discordUrl: string;
 };
 
 const initialState: Omit<SiteConfig, 'id'> = {
@@ -18,6 +19,7 @@ const initialState: Omit<SiteConfig, 'id'> = {
   language: '',
   timezone: '',
   footerCopyright: '',
+  discordUrl: '',
 };
 
 export default function ConfigurationPage() {
@@ -41,6 +43,7 @@ export default function ConfigurationPage() {
         language: data.language || '',
         timezone: data.timezone || '',
         footerCopyright: data.footerCopyright || '',
+        discordUrl: data.discordUrl || '',
       });
       setError(null);
     } catch {
@@ -153,6 +156,17 @@ export default function ConfigurationPage() {
                   value={form.footerCopyright || ''}
                   placeholder="© 2024 Your Site"
                   onChange={(e) => setForm((s) => ({ ...s, footerCopyright: e.target.value }))}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Discord URL (Community)</label>
+                <input
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                  type="text"
+                  value={form.discordUrl || ''}
+                  placeholder="https://discord.gg/..."
+                  onChange={(e) => setForm((s) => ({ ...s, discordUrl: e.target.value }))}
                 />
               </div>
 

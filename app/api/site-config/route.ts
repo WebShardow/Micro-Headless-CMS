@@ -29,6 +29,7 @@ export async function PATCH(request: NextRequest) {
       "fontFamily", "layoutStyle",
       // Zone 3 - Footer
       "footerCopyright", "footerBgColor", "footerTextColor",
+      "discordUrl",
     ] as const;
 
     const data: Record<string, any> = {};

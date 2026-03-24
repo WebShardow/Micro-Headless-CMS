@@ -69,6 +69,8 @@ model SiteConfig {
   footerCopyright String  @default("© 2024 My Portfolio")
   footerBgColor   String  @default("#1e293b")
   footerTextColor String  @default("#94a3b8")
+  // ── Communication ────────────────────────────────────
+  discordUrl      String  @default("")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
