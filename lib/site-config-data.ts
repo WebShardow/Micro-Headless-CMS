@@ -2,7 +2,7 @@ import { prisma } from "./prisma";
 import type { SiteConfig as SiteConfigModel } from "@prisma/client";
 
 export type SiteConfig = SiteConfigModel & {
-  discordUrl: string;
+  discordUrl?: string;
 };
 
 const defaults = {
@@ -50,15 +50,16 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   if (!config) {
     config = await prisma.siteConfig.create({ data: { id: "default", ...defaults } });
   }
-  return config;
+  return config as any as SiteConfig;
 }
 
 export async function updateSiteConfig(
   data: Partial<Omit<SiteConfig, "id" | "createdAt" | "updatedAt">>
 ): Promise<SiteConfig> {
-  return await prisma.siteConfig.upsert({
+  const config = await prisma.siteConfig.upsert({
     where: { id: "default" },
     update: { ...data, updatedAt: new Date() },
     create: { id: "default", ...defaults, ...data },
   });
+  return config as any as SiteConfig;
 }
