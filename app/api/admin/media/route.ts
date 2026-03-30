@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
-import fs from "fs";
-import path from "path";
+﻿import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { getStorageAdapter } from '@/lib/storage';
 
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+const MAX_SIZE = 10 * 1024 * 1024;
 
-// GET: ดึงรายการสื่อทั้งหมด
 export async function GET() {
   try {
     const media = await prisma.media.findMany({
@@ -13,48 +12,49 @@ export async function GET() {
     });
     return NextResponse.json(media);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch media" }, { status: 500 });
+    console.error('Media fetch error:', error);
+    return NextResponse.json({ error: 'Failed to fetch media' }, { status: 500 });
   }
 }
 
-// POST: อัปโหลดสื่อใหม่
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File;
+    const file = formData.get('file');
 
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    if (!(file instanceof File)) {
+      return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    
-    // สร้างชื่อไฟล์ที่ไม่ซ้ำกัน
-    const timestamp = Date.now();
-    const safeName = file.name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9.\-]/g, '');
-    const fileName = `${timestamp}-${safeName}`;
-    const filePath = path.join(UPLOAD_DIR, fileName);
-    const fileUrl = `/uploads/${fileName}`;
-
-    // บันทึกไฟล์ลงดิสก์
-    if (!fs.existsSync(UPLOAD_DIR)) {
-      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 });
     }
-    fs.writeFileSync(filePath, buffer);
 
-    // บันทึกข้อมูลลงฐานข้อมูล
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json({ error: 'File too large' }, { status: 400 });
+    }
+
+    const adapter = getStorageAdapter();
+    const uploaded = await adapter.upload({
+      buffer: Buffer.from(await file.arrayBuffer()),
+      filename: file.name,
+      contentType: file.type,
+    });
+
     const media = await prisma.media.create({
       data: {
         name: file.name,
-        url: fileUrl,
+        url: uploaded.url,
         type: file.type,
         size: file.size,
+        storageProvider: uploaded.provider,
+        storageKey: uploaded.key,
       },
     });
 
     return NextResponse.json(media);
   } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json({ error: "Failed to upload file" }, { status: 500 });
+    console.error('Media upload error:', error);
+    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
   }
 }

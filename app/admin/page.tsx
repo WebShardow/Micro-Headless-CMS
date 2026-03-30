@@ -1,371 +1,202 @@
-'use client';
+﻿import Link from 'next/link';
+import { prisma } from '@/lib/prisma';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
-import dynamic from 'next/dynamic';
-import AdminSidebar from './AdminSidebar';
+export const dynamic = 'force-dynamic';
 
-const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false });
+export default async function AdminDashboardPage() {
+  const [projectCount, staffCount, pageCount, mediaCount, categoryCount, latestProjects, latestPages, featuredStaff] =
+    await Promise.all([
+      prisma.project.count(),
+      prisma.staffMember.count(),
+      prisma.page.count(),
+      prisma.media.count(),
+      prisma.category.count(),
+      prisma.project.findMany({
+        select: { id: true, title: true, updatedAt: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 5,
+      }),
+      prisma.page.findMany({
+        select: { id: true, title: true, slug: true, updatedAt: true, isPublished: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 5,
+      }),
+      prisma.staffMember.findMany({
+        select: { id: true, name: true, role: true, featured: true },
+        orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
+        take: 5,
+      }),
+    ]);
 
-type Category = {
-  id: string;
-  name: string;
-};
+  const stats = [
+    { label: 'Projects', value: projectCount, href: '/admin/projects', tone: 'from-cyan-400 via-sky-500 to-indigo-500' },
+    { label: 'Staff Members', value: staffCount, href: '/admin/staff', tone: 'from-indigo-500 via-violet-500 to-fuchsia-500' },
+    { label: 'Pages', value: pageCount, href: '/admin/pages', tone: 'from-emerald-400 via-teal-500 to-cyan-500' },
+    { label: 'Media Files', value: mediaCount, href: '/admin/media', tone: 'from-amber-400 via-orange-500 to-rose-500' },
+    { label: 'Categories', value: categoryCount, href: '/admin/categories', tone: 'from-fuchsia-400 via-pink-500 to-rose-500' },
+  ];
 
-type ProjectInput = {
-  title: string;
-  description: string;
-  categoryId: string;
-  date: string;
-  thumbnail: string;
-  gallery: string;
-  videoLink: string;
-  projectUrl: string;
-  toolsUsed: string;
-};
-
-type Project = {
-  id: string;
-  title: string;
-  description: string;
-  category: Category;
-  date: string;
-  thumbnail: string;
-  gallery: string[];
-  videoLink?: string;
-  projectUrl?: string;
-  toolsUsed: string[];
-};
-
-const initialState: ProjectInput = {
-  title: '',
-  description: '',
-  categoryId: '',
-  date: new Date().toISOString().split('T')[0],
-  thumbnail: '',
-  gallery: '',
-  videoLink: '',
-  projectUrl: '',
-  toolsUsed: '',
-};
-
-export default function AdminPage() {
-  const [form, setForm] = useState<ProjectInput>(initialState);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const galleryArray = useMemo(
-    () =>
-      form.gallery
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-    [form.gallery]
-  );
-
-  const toolsArray = useMemo(
-    () =>
-      form.toolsUsed
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean),
-    [form.toolsUsed]
-  );
-
-  useEffect(() => {
-    refresh();
-    fetchCategories();
-  }, []);
-
-
-  async function refresh() {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/projects');
-      const data = await res.json();
-      setProjects(data);
-      setError(null);
-    } catch {
-      setError('ไม่สามารถโหลดข้อมูลได้');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function fetchCategories() {
-    try {
-      const res = await fetch('/api/categories');
-      const data = await res.json();
-      setCategories(data);
-    } catch {
-      setError('ไม่สามารถโหลดหมวดหมู่ได้');
-    }
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoading(true);
-
-    const payload = {
-      title: form.title,
-      description: form.description,
-      categoryId: form.categoryId,
-      date: form.date,
-      thumbnail: form.thumbnail,
-      gallery: galleryArray,
-      videoLink: form.videoLink,
-      projectUrl: form.projectUrl,
-      toolsUsed: toolsArray,
-    };
-
-    try {
-      const endpoint = editingId ? `/api/projects/${editingId}` : '/api/projects';
-      const method = editingId ? 'PATCH' : 'POST';
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const body = await res.json();
-        throw new Error(body.error || 'เกิดข้อผิดพลาด');
-      }
-
-      setForm(initialState);
-      setEditingId(null);
-      setError(null);
-      await refresh();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleDelete(id: string) {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('ไม่สามารถลบรายการได้');
-      await refresh();
-      setError(null);
-    } catch {
-      setError('เกิดข้อผิดพลาด');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
+  const quickActions = [
+    { label: 'Create Project', href: '/admin/projects' },
+    { label: 'Add Staff Member', href: '/admin/staff' },
+    { label: 'Edit Pages', href: '/admin/pages' },
+    { label: 'Manage Menu', href: '/admin/menu' },
+  ];
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-3 shadow-sm shrink-0">
-        <div className="flex items-center justify-between">
+    <div className="flex flex-1 flex-col overflow-hidden bg-transparent">
+      <header className="border-b border-white/30 bg-white/55 px-8 py-6 backdrop-blur-xl">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">Admin Panel</h2>
-            <p className="text-sm text-slate-500">จัดการเนื้อหาและหมวดหมู่</p>
+            <p className="text-xs font-black uppercase tracking-[0.32em] text-indigo-500">Headless CMS Dashboard</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">System Overview</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+              Your content engine is ready. Manage structured modules here and serve your consumer applications through stable APIs.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {quickActions.map((action) => (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="rounded-2xl border border-white/40 bg-white/70 px-4 py-3 text-sm font-bold text-slate-700 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.55)] backdrop-blur transition-all hover:-translate-y-0.5 hover:border-indigo-300 hover:text-indigo-700"
+              >
+                {action.label}
+              </Link>
+            ))}
           </div>
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50">
-        <div className="mx-auto max-w-7xl">
-          <div className="grid gap-5 lg:grid-cols-[1.2fr_1fr]">
-            <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h3 className="mb-4 text-lg font-semibold">{editingId ? 'แก้ไขผลงาน' : 'สร้างผลงานใหม่'}</h3>
-              {error && <div className="mb-4 rounded-xl border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Form fields remain the same... */}
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Title</label>
-                  <input
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                    type="text"
-                    value={form.title}
-                    required
-                    onChange={(e) => setForm((s) => ({ ...s, title: e.target.value }))}
-                  />
+      <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6">
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            {stats.map((stat) => (
+              <Link
+                key={stat.label}
+                href={stat.href}
+                className="group overflow-hidden rounded-[1.75rem] border border-white/35 bg-white/70 shadow-[0_20px_55px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl transition-all hover:-translate-y-1 hover:shadow-[0_25px_65px_-28px_rgba(79,70,229,0.35)]"
+              >
+                <div className={`h-1.5 bg-gradient-to-r ${stat.tone}`} />
+                <div className="p-5">
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{stat.label}</p>
+                  <p className="mt-3 text-4xl font-black tracking-tight text-slate-950">{stat.value}</p>
+                  <p className="mt-3 text-sm text-slate-500 transition-colors group-hover:text-slate-700">Open module</p>
                 </div>
+              </Link>
+            ))}
+          </section>
 
+          <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <article className="rounded-[2rem] border border-white/35 bg-white/72 p-6 shadow-[0_20px_55px_-32px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+              <div className="flex items-center justify-between gap-4">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Category</label>
-                  <select
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                    required
-                    value={form.categoryId}
-                    onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))}
-                  >
-                    <option value="">เลือกหมวดหมู่</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Recent Project Updates</p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">Projects module activity</h2>
                 </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Date</label>
-                  <input
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                    type="date"
-                    required
-                    value={form.date}
-                    onChange={(e) => setForm((s) => ({ ...s, date: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Thumbnail URL</label>
-                  <input
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                    type="text"
-                    value={form.thumbnail}
-                    onChange={(e) => setForm((s) => ({ ...s, thumbnail: e.target.value }))}
-                  />
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Description (Markdown)</label>
-                  <div className="overflow-hidden rounded-lg border border-slate-300">
-                    <MDEditor
-                      value={form.description}
-                      onChange={(value) => setForm((s) => ({ ...s, description: value ?? '' }))}
-                      data-color-mode="light"
-                      hideToolbar={false}
-                      minHeight={250}
-                    />
+                <Link href="/admin/projects" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">
+                  Open Projects
+                </Link>
+              </div>
+              <div className="mt-6 space-y-3">
+                {latestProjects.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-white/50 px-4 py-6 text-sm text-slate-500">
+                    No projects yet. Use the Projects module to publish the first item.
                   </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Gallery URLs (comma separated)</label>
-                  <input
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                    type="text"
-                    value={form.gallery}
-                    onChange={(e) => setForm((s) => ({ ...s, gallery: e.target.value }))}
-                  />
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-2">
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Video Link</label>
-                    <input
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                      type="text"
-                      value={form.videoLink}
-                      onChange={(e) => setForm((s) => ({ ...s, videoLink: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm font-medium text-slate-700">Project URL</label>
-                    <input
-                      className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                      type="text"
-                      value={form.projectUrl}
-                      onChange={(e) => setForm((s) => ({ ...s, projectUrl: e.target.value }))}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-slate-700">Tools Used (comma separated)</label>
-                  <input
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
-                    type="text"
-                    value={form.toolsUsed}
-                    onChange={(e) => setForm((s) => ({ ...s, toolsUsed: e.target.value }))}
-                  />
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-100 disabled:opacity-50"
-                  >
-                    {loading ? 'Processing...' : editingId ? 'Update Project' : 'Publish Project'}
-                  </button>
-                  {editingId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingId(null);
-                        setForm(initialState);
-                        setError(null);
-                      }}
-                      className="rounded-lg bg-slate-200 px-6 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </form>
-            </section>
-
-            <section className="space-y-4">
-              <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm h-full flex flex-col">
-                <h3 className="mb-4 text-lg font-semibold">รายการผลงาน</h3>
-                {loading && <p className="text-sm text-slate-500">กำลังโหลด...</p>}
-                {!loading && projects.length === 0 && <p className="text-sm text-slate-500">ไม่มีโปรเจคที่ถูกสร้าง</p>}
-                <div className="space-y-3 flex-1 overflow-y-auto pr-1">
-                  {projects.map((project) => (
-                    <div key={project.id} className="group rounded-xl border border-slate-100 bg-slate-50 p-4 hover:border-emerald-200 hover:bg-emerald-50/30 transition-all">
-                      <div className="flex items-start justify-between">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-bold text-slate-800 truncate">{project.title}</h4>
-                          <p className="text-xs text-slate-500 mt-1">{project.category.name} • {new Date(project.date).toLocaleDateString('th-TH')}</p>
-                        </div>
-                        <div className="ml-4 flex gap-2 shrink-0">
-                          <button
-                            className="rounded-lg bg-white p-2 text-amber-600 border border-slate-200 hover:bg-amber-50 shadow-sm"
-                            title="Edit"
-                            onClick={() => {
-                              setEditingId(project.id);
-                              setForm({
-                                title: project.title || '',
-                                description: project.description || '',
-                                categoryId: project.category.id,
-                                date: project.date.split('T')[0],
-                                thumbnail: project.thumbnail || '',
-                                gallery: project.gallery.join(', '),
-                                videoLink: project.videoLink || '',
-                                projectUrl: project.projectUrl || '',
-                                toolsUsed: project.toolsUsed.join(', '),
-                              });
-                            }}
-                          >
-                            ✎
-                          </button>
-                          <button
-                            className="rounded-lg bg-white p-2 text-rose-500 border border-slate-200 hover:bg-rose-50 shadow-sm"
-                            title="Delete"
-                            onClick={() => handleDelete(project.id)}
-                          >
-                            🗑
-                          </button>
-                        </div>
+                ) : (
+                  latestProjects.map((project) => (
+                    <div key={project.id} className="flex items-center justify-between rounded-2xl border border-white/30 bg-white/55 px-4 py-3 backdrop-blur">
+                      <div>
+                        <p className="font-bold text-slate-900">{project.title}</p>
+                        <p className="text-xs text-slate-500">Updated {new Date(project.updatedAt).toLocaleString('en-US')}</p>
                       </div>
-                      <p className="mt-2 text-sm text-slate-600 line-clamp-2 leading-relaxed italic">"{project.description || 'ไม่มีรายละเอียด'}"</p>
                     </div>
-                  ))}
+                  ))
+                )}
+              </div>
+            </article>
+
+            <article className="rounded-[2rem] border border-white/35 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-slate-100 shadow-[0_25px_65px_-30px_rgba(15,23,42,0.65)]">
+              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-cyan-300/80">Content Routing</p>
+              <h2 className="mt-2 text-2xl font-black text-white">How this CMS should be used</h2>
+              <ul className="mt-5 space-y-3 text-sm text-slate-300">
+                <li>Manage content here, but render it in your consumer applications.</li>
+                <li>Use Projects, Pages, Staff, Menu, and Site Config as reusable API-driven modules.</li>
+                <li>Keep consumer-specific presentation logic outside this repository.</li>
+              </ul>
+              <div className="mt-6 rounded-[1.5rem] border border-white/10 bg-white/5 p-5 backdrop-blur">
+                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Recommended flow</p>
+                <p className="mt-3 text-sm leading-6 text-slate-200">
+                  Admin edits content in this backend, the data is stored in Neon through Prisma, and each consuming app uses the API with its own routes and UI.
+                </p>
+              </div>
+            </article>
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-2">
+            <article className="rounded-[2rem] border border-white/35 bg-white/72 p-6 shadow-[0_20px_55px_-32px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Latest Pages</p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">Content entries</h2>
                 </div>
-              </article>
-            </section>
-          </div>
+                <Link href="/admin/pages" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">
+                  Open Pages
+                </Link>
+              </div>
+              <div className="mt-6 space-y-3">
+                {latestPages.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-white/50 px-4 py-6 text-sm text-slate-500">
+                    No pages available yet.
+                  </div>
+                ) : (
+                  latestPages.map((page) => (
+                    <div key={page.id} className="rounded-2xl border border-white/30 bg-white/55 px-4 py-3 backdrop-blur">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-bold text-slate-900">{page.title}</p>
+                          <p className="text-xs text-slate-500">/{page.slug}</p>
+                        </div>
+                        <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${page.isPublished ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {page.isPublished ? 'Published' : 'Draft'}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </article>
+
+            <article className="rounded-[2rem] border border-white/35 bg-white/72 p-6 shadow-[0_20px_55px_-32px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Staff Directory</p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">Recently updated staff</h2>
+                </div>
+                <Link href="/admin/staff" className="text-sm font-bold text-indigo-600 hover:text-indigo-700">
+                  Open Staff
+                </Link>
+              </div>
+              <div className="mt-6 space-y-3">
+                {featuredStaff.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-slate-200 bg-white/50 px-4 py-6 text-sm text-slate-500">
+                    No staff records available yet.
+                  </div>
+                ) : (
+                  featuredStaff.map((member) => (
+                    <div key={member.id} className="rounded-2xl border border-white/30 bg-white/55 px-4 py-3 backdrop-blur">
+                      <p className="font-bold text-slate-900">{member.name}</p>
+                      <p className="text-sm text-slate-500">{member.role}</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </article>
+          </section>
         </div>
       </main>
-
-      <footer className="bg-white border-t border-slate-200 p-3 text-center text-xs text-slate-400 shrink-0">
-        © 2024 Micro Headless CMS | Fixed Layout No Scrollbar
-      </footer>
     </div>
   );
 }
+
 

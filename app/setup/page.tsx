@@ -1,18 +1,18 @@
-import { redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+﻿import { redirect } from 'next/navigation';
 import SetupForm from './SetupForm';
+import { getDatabaseBootstrapStatus } from '@/lib/system/database-status';
 
 export const metadata = {
   title: 'Initial Setup — Micro Headless CMS',
-  description: 'ตั้งค่าบัญชีผู้ดูแลระบบครั้งแรก',
+  description: 'Create the first administrator after the database is ready.',
 };
 
 export default async function SetupPage() {
-  // Server-side guard: ถ้ามี user แล้ว ห้ามเข้าหน้านี้
-  const count = await prisma.user.count();
-  if (count > 0) {
+  const status = await getDatabaseBootstrapStatus();
+
+  if (status.schemaReady && !status.needsSetup) {
     redirect('/login');
   }
 
-  return <SetupForm />;
+  return <SetupForm bootstrap={status} />;
 }

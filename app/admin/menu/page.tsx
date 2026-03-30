@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import AdminSidebar from '../AdminSidebar';
+import PageHeader from '@/components/admin/page-header';
 
 type MenuItem = {
   id: string;
@@ -30,7 +30,7 @@ const emptyForm: FormData = {
   isExternal: false,
   showInNavbar: true,
   showInSidebar: false,
-  showInFooter: false
+  showInFooter: false,
 };
 
 export default function MenuPage() {
@@ -43,7 +43,9 @@ export default function MenuPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => { fetchItems(); }, []);
+  useEffect(() => {
+    fetchItems();
+  }, []);
 
   async function fetchItems() {
     setFetching(true);
@@ -133,24 +135,44 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-3 shadow-sm shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">จัดการเมนูทั้งหมด</h2>
-            <p className="text-sm text-slate-500">กำหนดรายการเมนูและตำแหน่งที่แสดงผล (Navbar, Sidebar, Footer)</p>
-          </div>
+    <div className="flex h-full flex-col overflow-hidden">
+      <PageHeader
+        moduleName="Navigation"
+        title="Menu Management"
+        description="จัดการรายการเมนูและตำแหน่งที่แสดงผล (Header, Navigation, Footer)"
+        recordCount={items.length}
+      />
+
+      {/* Alerts */}
+      {(error || successMsg) && (
+        <div className="shrink-0 border-b border-white/30 px-8 py-3 bg-gradient-to-b from-white/10 to-transparent">
+          {error && (
+            <div className="rounded-xl border border-red-300/50 bg-red-50/80 backdrop-blur-sm px-4 py-3 text-sm text-red-700">
+              ⚠️ {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="rounded-xl border border-emerald-300/50 bg-emerald-50/80 backdrop-blur-sm px-4 py-3 text-sm text-emerald-700">
+              ✅ {successMsg}
+            </div>
+          )}
         </div>
-      </header>
+      )}
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50">
-        <div className="mx-auto max-w-4xl">
-          {error && <div className="mb-4 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">⚠️ {error}</div>}
-          {successMsg && <div className="mb-4 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">✅ {successMsg}</div>}
-
-          {/* Add Form */}
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm mb-6">
-            <h3 className="mb-4 text-sm font-bold text-slate-800 uppercase tracking-tight">เพิ่มเมนูใหม่</h3>
+      {/* Main Content - Scrollable */}
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gradient-to-b from-slate-50 to-white px-8 py-6">
+        {fetching ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="text-center">
+              <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
+              <p className="text-sm text-slate-500">Loading menu items...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Add Form */}
+            <section className="rounded-2xl border border-white/40 bg-white/70 backdrop-blur p-8 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.55)]">
+              <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-indigo-600">Add New Menu Item</h3>
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="flex flex-wrap gap-4 items-end">
                 <div className="flex-1 min-w-[200px]">
@@ -170,7 +192,7 @@ export default function MenuPage() {
                     type="text"
                     value={form.url}
                     onChange={(e) => setForm((s) => ({ ...s, url: e.target.value }))}
-                    placeholder="เช่น /portfolio หรือ https://..."
+                    placeholder="เช่น /staff หรือ /about หรือ https://..."
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
                     required
                   />
@@ -181,11 +203,11 @@ export default function MenuPage() {
                 <div className="flex gap-4">
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" checked={form.showInNavbar} onChange={(e) => setForm((s) => ({ ...s, showInNavbar: e.target.checked }))} className="h-4 w-4 rounded text-sky-600" />
-                      <span className="text-xs font-bold text-slate-600 group-hover:text-sky-600 transition-colors">Navbar</span>
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-sky-600 transition-colors">Header</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" checked={form.showInSidebar} onChange={(e) => setForm((s) => ({ ...s, showInSidebar: e.target.checked }))} className="h-4 w-4 rounded text-sky-600" />
-                      <span className="text-xs font-bold text-slate-600 group-hover:text-sky-600 transition-colors">Sidebar</span>
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-sky-600 transition-colors">Context Nav</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer group">
                       <input type="checkbox" checked={form.showInFooter} onChange={(e) => setForm((s) => ({ ...s, showInFooter: e.target.checked }))} className="h-4 w-4 rounded text-sky-600" />
@@ -206,10 +228,10 @@ export default function MenuPage() {
             </form>
           </section>
 
-          {/* Menu List */}
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/30">
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Configuration Matrix</h3>
+            {/* Menu List */}
+            <section className="rounded-2xl border border-white/40 bg-white/70 backdrop-blur shadow-[0_18px_35px_-28px_rgba(15,23,42,0.55)] overflow-hidden">
+              <div className="flex items-center justify-between px-8 py-4 border-b border-white/40 bg-gradient-to-r from-white/10 to-transparent">
+                <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">Configuration Matrix</h3>
               <div className="flex gap-4 text-[10px] font-black text-slate-400">
                  <span className="w-10 text-center uppercase tracking-tighter">Nav</span>
                  <span className="w-10 text-center uppercase tracking-tighter">Side</span>
@@ -270,29 +292,29 @@ export default function MenuPage() {
                       <div className="flex items-center gap-6">
                         {/* Reorder */}
                         <div className="flex flex-col gap-1 shrink-0">
-                          <button onClick={() => handleMove(item.id, 'up')} disabled={idx === 0} className="text-slate-300 hover:text-sky-500 disabled:opacity-10 text-xs transition-colors p-1">▲</button>
-                          <button onClick={() => handleMove(item.id, 'down')} disabled={idx === items.length - 1} className="text-slate-300 hover:text-sky-500 disabled:opacity-10 text-xs transition-colors p-1">▼</button>
+                          <button onClick={() => handleMove(item.id, 'up')} disabled={idx === 0} className="text-slate-300 hover:text-sky-500 disabled:opacity-10 text-xs transition-colors p-1">â–²</button>
+                          <button onClick={() => handleMove(item.id, 'down')} disabled={idx === items.length - 1} className="text-slate-300 hover:text-sky-500 disabled:opacity-10 text-xs transition-colors p-1">â–¼</button>
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3">
                             <span className={`text-md font-black tracking-tight ${item.isVisible ? 'text-slate-800' : 'text-slate-300 line-through'}`}>{item.label}</span>
-                            {item.isExternal && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-400 uppercase tracking-tighter">↗ Link</span>}
+                            {item.isExternal && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black text-slate-400 uppercase tracking-tighter">â†— Link</span>}
                           </div>
                           <p className="text-[11px] text-slate-400 truncate font-medium mt-0.5 select-all">{item.url}</p>
                         </div>
 
                         {/* Config Toggles */}
                         <div className="flex gap-4 shrink-0 px-2">
-                           <button onClick={() => toggleField(item.id, 'showInNavbar', item.showInNavbar)} className={`w-10 h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-black ${item.showInNavbar ? 'bg-sky-500 text-white shadow-md shadow-sky-100' : 'bg-slate-100 text-slate-300'}`}>NAV</button>
-                           <button onClick={() => toggleField(item.id, 'showInSidebar', item.showInSidebar)} className={`w-10 h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-black ${item.showInSidebar ? 'bg-indigo-500 text-white shadow-md shadow-indigo-100' : 'bg-slate-100 text-slate-300'}`}>SIDE</button>
+                           <button onClick={() => toggleField(item.id, 'showInNavbar', item.showInNavbar)} className={`w-10 h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-black ${item.showInNavbar ? 'bg-sky-500 text-white shadow-md shadow-sky-100' : 'bg-slate-100 text-slate-300'}`}>HEAD</button>
+                           <button onClick={() => toggleField(item.id, 'showInSidebar', item.showInSidebar)} className={`w-10 h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-black ${item.showInSidebar ? 'bg-indigo-500 text-white shadow-md shadow-indigo-100' : 'bg-slate-100 text-slate-300'}`}>CTX</button>
                            <button onClick={() => toggleField(item.id, 'showInFooter', item.showInFooter)} className={`w-10 h-6 rounded-full transition-all flex items-center justify-center text-[10px] font-black ${item.showInFooter ? 'bg-emerald-500 text-white shadow-md shadow-emerald-100' : 'bg-slate-100 text-slate-300'}`}>FOOT</button>
                         </div>
 
                         {/* Actions */}
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-4 border-l border-slate-100 pl-4">
-                          <button onClick={() => toggleField(item.id, 'isVisible', item.isVisible)} className={`rounded-xl p-2.5 transition-colors ${item.isVisible ? 'text-slate-400 hover:text-sky-600 hover:bg-sky-50' : 'text-rose-500 bg-rose-50'}`} title={item.isVisible ? 'ซ่อนเมนูนี้ทั้งหมด' : 'แสดงเมนูนี้'}>{item.isVisible ? '👁️' : '🕶️'}</button>
+                          <button onClick={() => toggleField(item.id, 'isVisible', item.isVisible)} className={`rounded-xl p-2.5 transition-colors ${item.isVisible ? 'text-slate-400 hover:text-sky-600 hover:bg-sky-50' : 'text-rose-500 bg-rose-50'}`} title={item.isVisible ? 'ซ่อนเมนูนี้' : 'แสดงเมนูนี้'}>{item.isVisible ? '👁️' : '🕶️'}</button>
                           <button onClick={() => {
                               setEditingId(item.id);
                               setEditForm({
@@ -303,22 +325,19 @@ export default function MenuPage() {
                                 showInSidebar: item.showInSidebar,
                                 showInFooter: item.showInFooter
                               });
-                            }} className="rounded-xl p-2.5 text-amber-500 hover:bg-amber-50" title="แก้ไข">✎</button>
-                          <button onClick={() => handleDelete(item.id, item.label)} className="rounded-xl p-2.5 text-rose-500 hover:bg-rose-50" title="ลบ">🗑</button>
+                            }} className="rounded-xl p-2.5 text-amber-500 hover:bg-amber-50" title="แก้ไขข้อมูล">✎</button>
+                          <button onClick={() => handleDelete(item.id, item.label)} className="rounded-xl p-2.5 text-rose-500 hover:bg-rose-50" title="ลบ">🗑️</button>
                         </div>
                       </div>
                     )}
                   </li>
                 ))}
               </ul>
-            )}
-          </section>
-        </div>
+              )}
+            </section>
+          </div>
+        )}
       </main>
-
-      <footer className="bg-white border-t border-slate-200 p-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] shrink-0">
-        Centrally Managed Navigation Architecture
-      </footer>
     </div>
   );
-}
+  }

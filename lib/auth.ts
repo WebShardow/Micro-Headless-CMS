@@ -1,7 +1,15 @@
-import { prisma } from "./prisma";
+import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import bcrypt from "bcryptjs";
+import { prisma } from "./prisma";
+
+const sessionCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "strict" as const,
+  maxAge: 60 * 60 * 24 * 7,
+  path: "/",
+};
 
 export async function login(username: string, password: string) {
   const user = await prisma.user.findUnique({ where: { username } });
@@ -15,25 +23,12 @@ export async function login(username: string, password: string) {
   }
 
   const cookieStore = await cookies();
+  cookieStore.set("session", user.id, sessionCookieOptions);
 
-  // Session cookie
-  cookieStore.set("session", user.id, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-  });
-
-  // Flag บังคับเปลี่ยน password (ถ้าจำเป็น)
   if (user.mustChangePassword) {
-    cookieStore.set("must_change_pw", "1", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    cookieStore.set("must_change_pw", "1", sessionCookieOptions);
   } else {
-    cookieStore.delete("must_change_pw");
+    cookieStore.delete({ name: "must_change_pw", path: "/" });
   }
 
   return { mustChangePassword: user.mustChangePassword };
@@ -41,8 +36,8 @@ export async function login(username: string, password: string) {
 
 export async function logout() {
   const cookieStore = await cookies();
-  cookieStore.delete("session");
-  cookieStore.delete("must_change_pw");
+  cookieStore.delete({ name: "session", path: "/" });
+  cookieStore.delete({ name: "must_change_pw", path: "/" });
 }
 
 export async function getCurrentUser() {

@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -19,12 +19,12 @@ async function main() {
       showInFooter: false,
     },
     {
-      label: 'Portfolio',
-      url: '/portfolio',
+      label: 'Team Directory',
+      url: '/staff',
       order: 2,
       isVisible: true,
       showInNavbar: true,
-      showInSidebar: true, // แสดงทั้งบนและข้าง
+      showInSidebar: true, // แสดงทั้งบนและข้างใน
       showInFooter: false,
     },
     {
@@ -37,7 +37,7 @@ async function main() {
       showInFooter: false,
     },
     {
-      label: 'About Me',
+      label: 'About',
       url: '#about',
       order: 4,
       isVisible: true,
@@ -60,7 +60,7 @@ async function main() {
       order: 6,
       isVisible: true,
       showInNavbar: false,
-      showInSidebar: true, // ลิงก์เข้าหลังบ้านใน Sidebar
+      showInSidebar: true, // ลิงค์เข้าหลังบ้านใน Sidebar
       showInFooter: false,
     },
     {
@@ -77,7 +77,7 @@ async function main() {
       url: 'https://github.com',
       order: 8,
       isVisible: true,
-      isExternal: true, // ลิงก์ภายนอก
+      isExternal: true, // ลิงค์ภายนอก
       showInNavbar: false,
       showInSidebar: true,
       showInFooter: true,
@@ -109,3 +109,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

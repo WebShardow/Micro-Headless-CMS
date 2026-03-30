@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
-import AdminSidebar from '../AdminSidebar';
+import PageHeader from '@/components/admin/page-header';
 
 type Category = {
   id: string;
@@ -101,24 +101,44 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-6 py-3 shadow-sm shrink-0">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">จัดการหมวดหมู่</h2>
-            <p className="text-sm text-slate-500">เพิ่ม แก้ไข หรือลบหมวดหมู่ผลงาน</p>
-          </div>
+    <div className="flex h-full flex-col overflow-hidden">
+      <PageHeader
+        moduleName="Content"
+        title="Category Management"
+        description="เพิ่ม แก้ไข หรือลบหมวดหมู่ผลงาน"
+        recordCount={categories.length}
+      />
+
+      {/* Alerts */}
+      {(error || successMsg) && (
+        <div className="shrink-0 border-b border-white/30 px-8 py-3 bg-gradient-to-b from-white/10 to-transparent">
+          {error && (
+            <div className="rounded-xl border border-red-300/50 bg-red-50/80 backdrop-blur-sm px-4 py-3 text-sm text-red-700">
+              ⚠️ {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="rounded-xl border border-emerald-300/50 bg-emerald-50/80 backdrop-blur-sm px-4 py-3 text-sm text-emerald-700">
+              ✅ {successMsg}
+            </div>
+          )}
         </div>
-      </header>
+      )}
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50">
-        <div className="mx-auto max-w-2xl space-y-6">
-          {error && <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 flex items-center gap-2 animate-pulse">⚠️ {error}</div>}
-          {successMsg && <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 flex items-center gap-2 animate-bounce">✅ {successMsg}</div>}
-
-          {/* Add Category Card */}
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="mb-4 text-sm font-bold text-slate-800 uppercase tracking-tight">เพิ่มหมวดหมู่ใหม่</h3>
+      {/* Main Content - Scrollable */}
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gradient-to-b from-slate-50 to-white px-8 py-6">
+        {fetching ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="text-center">
+              <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
+              <p className="text-sm text-slate-500">Loading categories...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Add Category Card */}
+            <section className="rounded-2xl border border-white/40 bg-white/70 backdrop-blur p-8 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.55)]">
+              <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-indigo-600">Add New Category</h3>
             <form onSubmit={handleCreate} className="flex gap-3">
               <input
                 type="text"
@@ -132,10 +152,10 @@ export default function CategoriesPage() {
             </form>
           </section>
 
-          {/* Category Tree List */}
-          <section className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden h-fit">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 bg-slate-50/30">
-              <h3 className="text-sm font-bold text-slate-800 uppercase tracking-tight">รายการหมวดหมู่ทั้งหมด</h3>
+            {/* Category Tree List */}
+            <section className="rounded-2xl border border-white/40 bg-white/70 backdrop-blur shadow-[0_18px_35px_-28px_rgba(15,23,42,0.55)] overflow-hidden h-fit">
+              <div className="flex items-center justify-between px-8 py-4 border-b border-white/40 bg-gradient-to-r from-white/10 to-transparent">
+                <h3 className="text-xs font-black text-slate-700 uppercase tracking-widest">All Categories</h3>
               <span className="rounded-full bg-white border px-3 py-0.5 text-[10px] font-black text-slate-400 tracking-widest">{categories.length} CATEGORIES</span>
             </div>
 
@@ -188,12 +208,9 @@ export default function CategoriesPage() {
               </ul>
             )}
           </section>
-        </div>
+          </div>
+        )}
       </main>
-
-      <footer className="bg-white border-t border-slate-200 p-3 text-center text-xs text-slate-400 shrink-0">
-        © 2024 Micro Headless CMS | Categories Management
-      </footer>
     </div>
   );
-}
+  }

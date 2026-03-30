@@ -1,9 +1,17 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function SetupForm() {
+type BootstrapStatus = {
+  hasDatabaseUrl: boolean;
+  canConnect: boolean;
+  schemaReady: boolean;
+  needsSetup: boolean;
+  message: string;
+};
+
+export default function SetupForm({ bootstrap }: { bootstrap: BootstrapStatus }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -11,17 +19,24 @@ export default function SetupForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  const readyForSetup = bootstrap.hasDatabaseUrl && bootstrap.canConnect && bootstrap.schemaReady;
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
+    if (!readyForSetup) {
+      setError('Database is not ready yet. Please complete the bootstrap steps below first.');
+      return;
+    }
+
     if (password !== confirmPassword) {
-      setError('Password ไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง');
+      setError('Passwords do not match.');
       return;
     }
 
     if (password.length < 8) {
-      setError('Password ต้องมีอย่างน้อย 8 ตัวอักษร');
+      setError('Password must contain at least 8 characters.');
       return;
     }
 
@@ -40,123 +55,128 @@ export default function SetupForm() {
         throw new Error(data.error || 'Setup failed');
       }
 
-      // Setup สำเร็จ → บังคับเปลี่ยน password ก่อนเข้า admin
       router.push('/admin/change-password');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'เกิดข้อผิดพลาด');
+      setError(err instanceof Error ? err.message : 'Setup failed');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-500 rounded-2xl mb-4 shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">Initial Setup</h1>
-          <p className="text-slate-400 text-sm mt-1">สร้างบัญชีผู้ดูแลระบบครั้งแรก</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 p-4 text-white">
+      <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center py-10">
+        <div className="grid w-full gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+          <section className="rounded-[1.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-300/80">Bootstrap status</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight text-white">Initial Setup</h1>
+            <p className="mt-4 text-sm leading-7 text-slate-300">
+              The CMS should be installable even before the database is fully prepared. This page tells operators exactly what is missing instead of crashing during the first deployment.
+            </p>
+
+            <div className="mt-6 grid gap-3">
+              {[
+                { label: 'DATABASE_URL configured', value: bootstrap.hasDatabaseUrl },
+                { label: 'Database reachable', value: bootstrap.canConnect },
+                { label: 'Schema applied', value: bootstrap.schemaReady },
+                { label: 'Admin account required', value: bootstrap.needsSetup },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+                  <span className="text-sm font-bold text-slate-200">{item.label}</span>
+                  <span className={`rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] ${item.value ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                    {item.value ? 'ready' : 'pending'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-400/10 px-4 py-4 text-sm leading-6 text-cyan-100">
+              {bootstrap.message}
+            </div>
+
+            <div className="mt-6 space-y-3 text-sm text-slate-300">
+              <p className="font-bold uppercase tracking-[0.2em] text-slate-400">Standard install flow</p>
+              <ol className="list-decimal space-y-2 pl-5">
+                <li>Set `DATABASE_URL` in the hosting environment.</li>
+                <li>Run `npx prisma db push` or `npx prisma migrate deploy`.</li>
+                <li>Refresh this page.</li>
+                <li>Create the first admin account.</li>
+              </ol>
+            </div>
+          </section>
+
+          <section className="rounded-[1.5rem] border border-white/10 bg-white/5 p-8 backdrop-blur-xl shadow-2xl">
+            <h2 className="text-2xl font-black text-white">Create the first administrator</h2>
+            <p className="mt-3 text-sm leading-7 text-slate-300">
+              This account is only available when the database connection and schema are ready.
+            </p>
+
+            {error && (
+              <div className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">Username</label>
+                <input
+                  id="setup-username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="superadmin"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  required
+                  minLength={3}
+                  autoComplete="username"
+                  disabled={!readyForSetup || loading}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">Password</label>
+                <input
+                  id="setup-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="At least 8 characters"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  disabled={!readyForSetup || loading}
+                />
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">Confirm password</label>
+                <input
+                  id="setup-confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Type the password again"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                  disabled={!readyForSetup || loading}
+                />
+              </div>
+
+              <button
+                id="setup-submit"
+                type="submit"
+                disabled={loading || !readyForSetup}
+                className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? 'Creating account...' : 'Create admin account'}
+              </button>
+            </form>
+          </section>
         </div>
-
-        {/* Banner แจ้งเตือน */}
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-6 flex gap-3">
-          <svg className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <p className="text-amber-300 text-sm">
-            หน้านี้ใช้ได้เพียงครั้งเดียว เมื่อสร้างบัญชีแล้วจะไม่สามารถเข้าถึงได้อีก
-          </p>
-        </div>
-
-        {/* Form */}
-        <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8 shadow-2xl">
-          {error && (
-            <div className="mb-5 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Username
-              </label>
-              <input
-                id="setup-username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="superadmin"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                required
-                minLength={3}
-                autoComplete="username"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Password
-              </label>
-              <input
-                id="setup-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="อย่างน้อย 8 ตัวอักษร"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                ยืนยัน Password
-              </label>
-              <input
-                id="setup-confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="พิมพ์ password อีกครั้ง"
-                className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-            </div>
-
-            <button
-              id="setup-submit"
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                  กำลังสร้างบัญชี...
-                </span>
-              ) : (
-                '🚀 สร้างบัญชีและเริ่มต้นใช้งาน'
-              )}
-            </button>
-          </form>
-        </div>
-
-        <p className="text-center text-slate-600 text-xs mt-6">
-          Micro Headless CMS · Account Genesis
-        </p>
       </div>
     </div>
   );

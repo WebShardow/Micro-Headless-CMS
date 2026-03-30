@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSiteConfig, updateSiteConfig } from "@/lib/site-config-data";
+import { getSiteConfig, updateSiteConfig, type SiteConfig } from "@/lib/site-config-data";
 
 export async function GET() {
   try {
@@ -29,10 +29,11 @@ export async function PATCH(request: NextRequest) {
       "fontFamily", "layoutStyle",
       // Zone 3 - Footer
       "footerCopyright", "footerBgColor", "footerTextColor",
-      "discordUrl",
+      "discordUrl", "githubUrl", "twitterUrl", "linkedinUrl",
+      "privacyUrl", "termsUrl", "cookiePolicyUrl",
     ] as const;
 
-    const data: Record<string, any> = {};
+    const data: Partial<Omit<SiteConfig, "id" | "createdAt" | "updatedAt">> = {};
     for (const key of allowed) {
       if (body[key] !== undefined) data[key] = body[key];
     }

@@ -1,40 +1,41 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 
 const menuGroups = [
   {
-    title: 'Management',
+    title: 'Overview',
     items: [
-      { label: '📂 Dashboard & Projects', href: '/admin' },
-      { label: '🏷️ Categories', href: '/admin/categories' },
-      { label: '📄 Pages Content', href: '/admin/pages' },
-      { label: '🖼️ Media Gallery', href: '/admin/media' },
-    ]
+      { label: 'Dashboard', href: '/admin' },
+    ],
   },
   {
-    title: 'Appearance',
+    title: 'Content',
     items: [
-      { label: '🧭 Navigation / Menu', href: '/admin/menu' },
-      { label: '🎨 Site Design', href: '/admin/design' },
-    ]
+      { label: 'Projects', href: '/admin/projects' },
+      { label: 'Staff Members', href: '/admin/staff' },
+      { label: 'Pages', href: '/admin/pages' },
+      { label: 'Categories', href: '/admin/categories' },
+    ],
+  },
+  {
+    title: 'Delivery',
+    items: [
+      { label: 'Media Library', href: '/admin/media' },
+      { label: 'Navigation', href: '/admin/menu' },
+      { label: 'Site Config', href: '/admin/configuration' },
+      { label: 'Site Design', href: '/admin/design' },
+      { label: 'Automation', href: '/admin/automation' },
+    ],
   },
   {
     title: 'System',
     items: [
-      { label: '⚙️ Configuration', href: '/admin/configuration' },
-      { label: '🗄️ Backup & Restore', href: '/admin/database' },
-      { label: '📦 Module Manager', href: '/admin/modules' },
-    ]
+      { label: 'Modules', href: '/admin/modules' },
+      { label: 'Bootstrap Status', href: '/admin/database' },
+    ],
   },
-  {
-    title: 'View Site',
-    items: [
-      { label: '🏠 Website Home', href: '/' },
-      { label: '🖼️ Portfolio View', href: '/portfolio' },
-    ]
-  }
 ];
 
 export default function AdminSidebar() {
@@ -42,64 +43,75 @@ export default function AdminSidebar() {
   const router = useRouter();
 
   async function handleLogout() {
-    if (!confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) return;
+    if (!confirm('Do you want to sign out?')) return;
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
   }
 
   return (
-    <aside className="w-80 bg-slate-900 text-slate-100 shadow-2xl flex flex-col h-full border-r border-slate-800">
-      {/* Branding */}
-      <div className="p-8 border-b border-slate-800/50">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/20">🚀</div>
+    <aside className="relative flex h-screen w-80 shrink-0 flex-col overflow-hidden border-r border-white/10 bg-[linear-gradient(180deg,#081120_0%,#0c1730_100%)] text-slate-100 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.9)]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-indigo-500/18 to-transparent" />
+        <div className="absolute -left-10 top-24 h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="absolute right-0 top-64 h-52 w-52 rounded-full bg-indigo-500/12 blur-3xl" />
+      </div>
+
+      <div className="relative border-b border-white/10 p-8">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 via-indigo-500 to-violet-500 text-xl font-black text-white shadow-[0_16px_30px_-18px_rgba(99,102,241,0.9)]">
+            M
+          </div>
           <div>
-            <h1 className="text-lg font-black tracking-tighter uppercase">Micro CMS</h1>
-            <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-[0.2em] opacity-80">v1.2 Control Panel</p>
+            <h1 className="text-xl font-black uppercase tracking-tight !text-white">MICRO CMS</h1>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.28em] text-slate-300">
+              PORTABLE HEADLESS CONTROL
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Groups */}
-      <nav className="flex-1 overflow-y-auto p-6 scrollbar-thin space-y-9">
-        {menuGroups.map((group) => (
-          <div key={group.title} className="space-y-4">
-            <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] px-2">{group.title}</h3>
-            <div className="space-y-1">
-              {group.items.map((item) => {
-                const isActive =
-                  item.href === '/admin'
-                    ? pathname === '/admin'
-                    : pathname.startsWith(item.href) && item.href !== '/';
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+          <div className="space-y-8 pb-6">
+            {menuGroups.map((group) => (
+              <div key={group.title} className="space-y-3">
+                <h3 className="px-3 text-[10px] font-black uppercase tracking-[0.32em] text-slate-500">
+                  {group.title}
+                </h3>
+                <div className="space-y-1.5">
+                  {group.items.map((item) => {
+                    const isActive = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href);
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3.5 text-xs font-bold transition-all duration-300 ${
-                      isActive
-                        ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/20 translate-x-1'
-                        : 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-100 hover:translate-x-1'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </div>
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`flex items-center justify-between rounded-2xl px-4 py-3.5 text-sm font-bold transition-all duration-300 ${
+                          isActive
+                            ? 'translate-x-1 bg-gradient-to-r from-cyan-400/90 via-indigo-500 to-violet-500 text-white shadow-[0_20px_35px_-20px_rgba(99,102,241,0.95)]'
+                            : 'border border-transparent text-slate-300 hover:translate-x-1 hover:border-white/8 hover:bg-white/6 hover:text-slate-100'
+                        }`}
+                      >
+                        <span>{item.label}</span>
+                        <span className={`text-xs ${isActive ? 'text-white/80' : 'text-slate-500'}`}>›</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </nav>
+        </nav>
 
-      {/* Bottom Actions */}
-      <div className="p-6 border-t border-slate-800/50 bg-slate-950/30">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center justify-between group rounded-xl px-4 py-3.5 text-xs font-black uppercase tracking-widest text-rose-400 hover:bg-rose-500/10 hover:text-rose-500 transition-all border border-transparent hover:border-rose-500/20"
-        >
-          <span>Sign Out</span>
-          <span className="group-hover:translate-x-1 transition-transform">→</span>
-        </button>
+        <div className="relative border-t border-white/10 px-6 py-6">
+          <button
+            onClick={handleLogout}
+            className="group flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3.5 backdrop-blur !text-slate-200 shadow-[0_14px_24px_-18px_rgba(15,23,42,0.9)] transition-all hover:border-cyan-400/20 hover:bg-white/8 hover:!text-white"
+          >
+            <span className="!text-slate-200 text-xs font-black uppercase tracking-[0.22em] group-hover:!text-white">SIGN OUT</span>
+            <span className="!text-slate-400 transition-transform group-hover:translate-x-1 group-hover:!text-white">→</span>
+          </button>
+        </div>
       </div>
     </aside>
   );

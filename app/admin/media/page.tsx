@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import PageHeader from "@/components/admin/page-header";
 
 type MediaItem = {
   id: string;
@@ -84,25 +85,47 @@ export default function MediaAdmin() {
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-12 animate-in fade-in duration-700">
-      {/* Header & Upload */}
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-10 rounded-[3rem] shadow-2xl shadow-indigo-100 border border-slate-50">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-black tracking-tighter uppercase text-slate-900">คลังสื่อ (Media Gallery)</h1>
-          <p className="text-sm font-bold opacity-40 uppercase tracking-widest leading-none">จัดการไลบรารีรูปภาพสำหรับคุมเนื้อหาทั้งเว็บไซต์</p>
-        </div>
-        
-        <label className="group relative overflow-hidden">
-           <div className={`px-10 py-5 rounded-3xl bg-indigo-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-indigo-200 transition-all hover:bg-indigo-700 hover:translate-y-[-2px] cursor-pointer flex items-center gap-4 ${uploading ? 'opacity-50 animate-pulse' : ''}`}>
-              <span>{uploading ? "กำลังอัปโหลด..." : "อัปโหลดรูปภาพใหม่"}</span>
-              <span className="text-xl">✨</span>
-           </div>
-           <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} className="absolute inset-0 opacity-0 cursor-pointer" />
-        </label>
-      </header>
+    <div className="flex h-full flex-col overflow-hidden">
+      <PageHeader
+        moduleName="Asset Management"
+        title="Media Library"
+        description="Manage image library for content management across the website"
+        recordCount={media.length}
+      />
 
-      {/* Gallery Grid */}
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+      {/* Main Content - Scrollable */}
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-gradient-to-b from-slate-50 to-white px-8 py-6">
+        {loading ? (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="text-center">
+              <div className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600"></div>
+              <p className="text-sm text-slate-500">Loading media library...</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Upload Section */}
+            <section className="rounded-2xl border border-white/40 bg-white/70 backdrop-blur p-8 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.55)]">
+              <h3 className="mb-4 text-xs font-black uppercase tracking-widest text-indigo-600">Upload New Images</h3>
+              <label className="group relative overflow-hidden">
+                 <div className={`px-10 py-5 rounded-3xl bg-indigo-600 text-white font-black uppercase text-xs tracking-[0.2em] shadow-xl shadow-indigo-200 transition-all hover:bg-indigo-700 hover:translate-y-[-2px] cursor-pointer flex items-center gap-4 w-fit ${uploading ? 'opacity-50 animate-pulse' : ''}`}>
+                    <span>{uploading ? "Uploading..." : "Upload New Image"}</span>
+                    <span className="text-xl">✨</span>
+                 </div>
+                 <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </label>
+            </section>
+
+            {/* Gallery Grid */}
+            <section className="rounded-2xl border border-white/40 bg-white/70 backdrop-blur p-8 shadow-[0_18px_35px_-28px_rgba(15,23,42,0.55)]">
+              <h3 className="mb-6 text-xs font-black uppercase tracking-widest text-indigo-600">Gallery ({media.length})</h3>
+              {media.length === 0 ? (
+                <div className="py-20 text-center">
+                  <div className="text-6xl mb-6 opacity-20">🖼️</div>
+                  <p className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">No images in media library</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
          {media.map((item) => (
             <div key={item.id} className="group flex flex-col bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500">
                {/* Preview */}
@@ -123,14 +146,12 @@ export default function MediaAdmin() {
                </div>
             </div>
          ))}
-
-         {!loading && media.length === 0 && (
-            <div className="col-span-full py-24 text-center bg-slate-50/50 rounded-[4rem] border-4 border-dashed border-slate-100">
-               <div className="text-6xl mb-6 opacity-20">🖼️</div>
-               <p className="text-sm font-black uppercase tracking-[0.3em] opacity-20">ยังไม่มีรูปภาพในคลังสื่อ</p>
-            </div>
-         )}
-      </section>
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+      </main>
 
       {error && (
         <div className="fixed bottom-10 right-10 bg-rose-600 text-white px-10 py-5 rounded-3xl shadow-3xl font-black text-xs uppercase tracking-widest animate-bounce">

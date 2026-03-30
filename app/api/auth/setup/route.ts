@@ -1,73 +1,75 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import bcrypt from "bcryptjs";
+﻿import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import bcrypt from 'bcryptjs';
+import { prisma } from '@/lib/prisma';
+import { getDatabaseBootstrapStatus } from '@/lib/system/database-status';
 
-// GET: ตรวจสอบว่าต้อง setup ไหม
 export async function GET() {
-  const count = await prisma.user.count();
-  return NextResponse.json({ needsSetup: count === 0 });
+  const status = await getDatabaseBootstrapStatus();
+  return NextResponse.json({
+    needsSetup: status.needsSetup,
+    bootstrap: status,
+  });
 }
 
-// POST: สร้าง Super Admin ครั้งแรก
 export async function POST(request: NextRequest) {
   try {
-    // ห้ามใช้ถ้ามี user อยู่แล้ว
-    const count = await prisma.user.count();
-    if (count > 0) {
+    const status = await getDatabaseBootstrapStatus();
+
+    if (!status.hasDatabaseUrl || !status.canConnect || !status.schemaReady) {
+      return NextResponse.json({ error: status.message }, { status: 503 });
+    }
+
+    if (!status.needsSetup) {
       return NextResponse.json(
-        { error: "Setup already completed. Please login." },
-        { status: 403 }
+        { error: 'Setup already completed. Please login.' },
+        { status: 403 },
       );
     }
 
     const { username, password } = await request.json();
 
     if (!username || !password) {
-      return NextResponse.json({ error: "Username and password required" }, { status: 400 });
+      return NextResponse.json({ error: 'Username and password required' }, { status: 400 });
     }
 
     if (username.length < 3) {
-      return NextResponse.json({ error: "Username must be at least 3 characters" }, { status: 400 });
+      return NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 });
     }
 
     if (password.length < 8) {
-      return NextResponse.json(
-        { error: "Password must be at least 8 characters" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
     }
 
-    // Hash password ด้วย bcrypt
     const hashedPassword = await bcrypt.hash(password, 12);
-
     const user = await prisma.user.create({
       data: {
         username,
         password: hashedPassword,
-        role: "superadmin",
-        mustChangePassword: true, // บังคับเปลี่ยน password ครั้งแรก
+        role: 'superadmin',
+        mustChangePassword: true,
       },
     });
 
-    // Auto-login หลัง setup เสร็จ
     const cookieStore = await cookies();
-    cookieStore.set("session", user.id, {
+    cookieStore.set('session', user.id, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       maxAge: 60 * 60 * 24 * 7,
+      path: '/',
     });
-    cookieStore.set("must_change_pw", "1", {
+    cookieStore.set('must_change_pw', '1', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       maxAge: 60 * 60 * 24 * 7,
+      path: '/',
     });
 
     return NextResponse.json({ success: true, mustChangePassword: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Setup failed";
+    const message = error instanceof Error ? error.message : 'Setup failed';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

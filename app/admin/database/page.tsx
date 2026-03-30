@@ -1,131 +1,121 @@
-"use client";
+﻿'use client';
 
-import { useState } from "react";
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Unknown error';
+}
+
+type BootstrapStatus = {
+  hasDatabaseUrl: boolean;
+  canConnect: boolean;
+  schemaReady: boolean;
+  needsSetup: boolean;
+  message: string;
+};
 
 export default function DatabaseAdmin() {
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [status, setStatus] = useState<BootstrapStatus | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleBackup() {
+  useEffect(() => {
+    void fetchStatus();
+  }, []);
+
+  async function fetchStatus() {
     setLoading(true);
-    setMessage(null);
-    setError(null);
     try {
-      const res = await fetch("/api/admin/database");
-      if (!res.ok) throw new Error("Backup failed");
-      
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `backup-${new Date().toISOString().slice(0, 10)}.db`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setMessage("ดาวน์โหลดไฟล์สำรองข้อมูลสำเร็จ!");
-    } catch (err: any) {
-      setError(err.message);
+      const res = await fetch('/api/system/bootstrap', { cache: 'no-store' });
+      const payload = (await res.json()) as BootstrapStatus | { error?: string };
+      if (!res.ok) throw new Error('error' in payload ? payload.error : 'Failed to inspect bootstrap state');
+      setStatus(payload as BootstrapStatus);
+      setError(null);
+    } catch (err) {
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleRestore(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!confirm("⚠️ คำเตือน: การกู้คืนข้อมูลจะเขียนทับฐานข้อมูลปัจจุบันทั้งหมด คุณแน่ใจหรือไม่? (แนะนำให้ Backup ไว้ก่อน)")) {
-        e.target.value = "";
-        return;
-    }
-
-    setLoading(true);
-    setMessage(null);
-    setError(null);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const res = await fetch("/api/admin/database", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || "Restore failed");
-      }
-      
-      setMessage("กู้คืนข้อมูลสำเร็จ! ระบบจะรีเฟรชข้อมูลใหม่ครับ");
-      setTimeout(() => window.location.reload(), 2000);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      e.target.value = "";
-    }
-  }
+  const cards = [
+    { label: 'DATABASE_URL configured', value: status?.hasDatabaseUrl ?? false },
+    { label: 'Database reachable', value: status?.canConnect ?? false },
+    { label: 'Schema applied', value: status?.schemaReady ?? false },
+    { label: 'Admin setup pending', value: status?.needsSetup ?? false },
+  ];
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-12 animate-in fade-in duration-500">
-      <header className="space-y-1">
-        <h1 className="text-4xl font-black tracking-tighter uppercase text-slate-900">ฐานข้อมูล (Database)</h1>
-        <p className="text-sm font-bold opacity-40 uppercase tracking-widest">การสำรองและการกู้คืนข้อมูลระบบ (SQLite Backup & Restore)</p>
+    <div className="flex flex-1 flex-col overflow-hidden bg-transparent">
+      <header className="border-b border-white/30 bg-white/55 px-8 py-6 backdrop-blur-xl">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.32em] text-indigo-500">System Bootstrap</p>
+          <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Database and install status</h1>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+            Database connection details should be configured as deployment environment variables, not written through the admin UI. This screen helps operators understand what is missing during first install.
+          </p>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-         {/* Backup Box */}
-         <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-indigo-100 border border-slate-100 space-y-6">
-            <div className="h-16 w-16 rounded-3xl bg-indigo-50 flex items-center justify-center text-3xl">📥</div>
-            <div className="space-y-2">
-               <h3 className="text-xl font-bold">สำรองข้อมูล (Backup)</h3>
-               <p className="text-sm opacity-50 font-medium leading-relaxed">ดาวน์โหลดไฟล์ฐานข้อมูล (.db) เพื่อเก็บไว้ป้องกันเหตุฉุกเฉิน</p>
+      <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-6">
+          {error && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm font-bold text-rose-700">
+              {error}
             </div>
-            <button 
-              onClick={handleBackup}
-              disabled={loading}
-              className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-black uppercase text-xs tracking-widest hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-200 active:scale-95 disabled:opacity-50"
-            >
-               {loading ? "กำลังดำเนินการ..." : "กดเพื่อ Backup"}
-            </button>
-         </div>
+          )}
 
-         {/* Restore Box */}
-         <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-rose-100 border border-slate-100 space-y-6">
-            <div className="h-16 w-16 rounded-3xl bg-rose-50 flex items-center justify-center text-3xl">📤</div>
-            <div className="space-y-2">
-               <h3 className="text-xl font-bold text-rose-950">กู้คืนข้อมูล (Restore)</h3>
-               <p className="text-sm opacity-50 font-medium leading-relaxed">อัปโหลดไฟล์ .db ที่เคย Backup ไว้กลับเข้าสู่ระบบ</p>
-            </div>
-            <label className="block">
-               <span className="sr-only">เลือกไฟล์กู้คืน</span>
-               <input 
-                 type="file" 
-                 accept=".db"
-                 onChange={handleRestore}
-                 disabled={loading}
-                 className="block w-full text-xs text-slate-500
-                   file:mr-4 file:py-4 file:px-8
-                   file:rounded-2xl file:border-0
-                   file:text-xs file:font-black file:uppercase file:tracking-widest
-                   file:bg-rose-50 file:text-rose-700
-                   hover:file:bg-rose-100 transition-all cursor-pointer opacity-80"
-               />
-            </label>
-         </div>
-      </div>
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {cards.map((card) => (
+              <article key={card.label} className="rounded-[1.25rem] border border-white/35 bg-white/72 p-5 shadow-[0_20px_55px_-32px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">{card.label}</p>
+                <div className={`mt-4 inline-flex rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] ${card.value ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                  {card.value ? 'Ready' : 'Pending'}
+                </div>
+              </article>
+            ))}
+          </section>
 
-      {(message || error) && (
-        <div className={`p-6 rounded-3xl text-xs font-black uppercase tracking-widest text-center shadow-lg animate-bounce ${error ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}>
-           {error ? `⚠️ ERROR: ${error}` : `✅ Success: ${message}`}
+          <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+            <article className="rounded-[1.25rem] border border-white/35 bg-white/72 p-6 shadow-[0_20px_55px_-32px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-slate-400">Current status</p>
+              <h2 className="mt-2 text-2xl font-black text-slate-950">Bootstrap guidance</h2>
+              <p className="mt-4 text-sm leading-7 text-slate-600">
+                {loading ? 'Checking environment and schema status...' : status?.message ?? 'No status available.'}
+              </p>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => void fetchStatus()}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-indigo-300 hover:text-indigo-700"
+                >
+                  Refresh status
+                </button>
+                <Link href="/setup" className="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-bold text-indigo-700 transition hover:bg-indigo-100">
+                  Open setup
+                </Link>
+              </div>
+            </article>
+
+            <article className="rounded-[1.25rem] border border-white/35 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-slate-100 shadow-[0_25px_65px_-30px_rgba(15,23,42,0.65)]">
+              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-cyan-300/80">Standard deployment flow</p>
+              <ol className="mt-5 list-decimal space-y-3 pl-5 text-sm leading-6 text-slate-300">
+                <li>Set `DATABASE_URL` in the host environment.</li>
+                <li>Apply the schema with `npx prisma db push` or `npx prisma migrate deploy`.</li>
+                <li>Confirm the status on this page.</li>
+                <li>Create the first admin account from `/setup`.</li>
+              </ol>
+              <div className="mt-6 rounded-[1rem] border border-white/10 bg-white/5 p-4 backdrop-blur">
+                <p className="text-sm leading-6 text-slate-200">
+                  Editing database credentials inside the CMS is intentionally avoided because most production environments expect these values at the host or container layer.
+                </p>
+              </div>
+            </article>
+          </section>
         </div>
-      )}
-
-      <footer className="pt-20 text-center opacity-20">
-         <p className="text-[10px] font-black uppercase tracking-widest italic">⚠️ คำแนะนำ: ควรสำรองข้อมูลสัปดาห์ละหนึ่งครั้งเพื่อความปลอดภัยสูงสุด</p>
-      </footer>
+      </main>
     </div>
   );
 }

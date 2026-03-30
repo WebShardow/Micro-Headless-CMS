@@ -1,9 +1,7 @@
 import { prisma } from "./prisma";
 import type { SiteConfig as SiteConfigModel } from "@prisma/client";
 
-export type SiteConfig = SiteConfigModel & {
-  discordUrl?: string;
-};
+export type SiteConfig = SiteConfigModel;
 
 const defaults = {
   siteName: "Micro Headless CMS",
@@ -21,8 +19,8 @@ const defaults = {
   // Zone 1 - Hero
   showHero: true,
   heroStyle: "centered",
-  heroHeading: "สวัสดี ฉันคือนักออกแบบ",
-  heroSubheading: "ดูผลงานสร้างสรรค์ของฉันด้านล่าง",
+  heroHeading: "สวัสดี จินตอบนอกแบบ",
+  heroSubheading: "ดูผลงานสร้างสรรค์ของฉันได้ล่าง",
   heroBgColor: "#f0f9ff",
   heroTextColor: "#0f172a",
   heroImageUrl: "", // เพิ่มใหม่
@@ -43,14 +41,30 @@ const defaults = {
   footerTextColor: "#94a3b8",
   // Communication
   discordUrl: "https://discord.gg/Meywv7MXJd",
+  githubUrl: "",
+  twitterUrl: "",
+  linkedinUrl: "",
+  privacyUrl: "",
+  termsUrl: "",
+  cookiePolicyUrl: "",
 };
+
+export const siteConfigKeys = [
+  "siteName", "domain", "language", "timezone", "logoUrl", "logoAlt", "showLogoText",
+  "navStyle", "navBgColor", "navTextColor", "showHero", "heroStyle", "heroHeading",
+  "heroSubheading", "heroBgColor", "heroTextColor", "heroImageUrl", "heroBtnLabel",
+  "heroBtnColor", "primaryColor", "accentColor", "bgColor", "textColor", "fontFamily",
+  "layoutStyle", "showSidebar", "sidebarPosition", "footerCopyright", "footerBgColor",
+  "footerTextColor", "discordUrl", "githubUrl", "twitterUrl", "linkedinUrl",
+  "privacyUrl", "termsUrl", "cookiePolicyUrl",
+] as const;
 
 export async function getSiteConfig(): Promise<SiteConfig> {
   let config = await prisma.siteConfig.findUnique({ where: { id: "default" } });
   if (!config) {
     config = await prisma.siteConfig.create({ data: { id: "default", ...defaults } });
   }
-  return config as any as SiteConfig;
+  return config as SiteConfig;
 }
 
 export async function updateSiteConfig(
@@ -61,5 +75,6 @@ export async function updateSiteConfig(
     update: { ...data, updatedAt: new Date() },
     create: { id: "default", ...defaults, ...data },
   });
-  return config as any as SiteConfig;
+  return config as SiteConfig;
 }
+

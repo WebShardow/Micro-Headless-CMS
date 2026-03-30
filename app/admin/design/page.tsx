@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
 import { FormEvent, useEffect, useState, useRef } from 'react';
+import PageHeader from '@/components/admin/page-header';
 
 type ThemeConfig = {
   logoUrl: string;
@@ -45,14 +46,14 @@ const defaultTheme: ThemeConfig = {
   logoUrl: '',
   logoAlt: 'Logo',
   showLogoText: true,
-  siteName: 'My Portfolio',
+  siteName: 'My Site',
   navStyle: 'fixed',
   navBgColor: '#ffffff',
   navTextColor: '#0f172a',
   showHero: true,
   heroStyle: 'centered',
-  heroHeading: 'สวัสดี ฉันคือนักออกแบบ',
-  heroSubheading: 'ดูผลงานสร้างสรรค์ของฉันด้านล่าง',
+  heroHeading: 'สวัสดี จินตอบนอกแบบ',
+  heroSubheading: 'ดูผลงานสร้างสรรค์ของฉันได้ล่าง',
   heroBgColor: '#f8fafc',
   heroTextColor: '#0f172a',
   heroImageUrl: '',
@@ -145,21 +146,26 @@ export default function DesignPage() {
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
-      <header className="flex h-16 shrink-0 items-center justify-between border-b bg-white px-6">
-        <div>
-          <h1 className="text-lg font-bold text-slate-900">จัดการรูปแบบเว็บ</h1>
-          <p className="text-xs text-slate-500">ปรับแต่งสี ฟอนต์ และรูปภาพหลัก</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {success && <span className="text-xs font-bold text-emerald-600 animate-bounce">บันทึกสำเร็จ!</span>}
-          {isDirty && <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest px-2 py-1 bg-amber-50 rounded">ยังไม่ได้บันทึก</span>}
-          <button
-            onClick={handleSave}
-            disabled={loading || !isDirty}
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50 transition-all font-sans"
-          >
-            {loading ? '...' : 'บันทึกการตั้งค่า'}
-          </button>
+      <header className="border-b border-white/30 bg-white/55 px-8 py-6 backdrop-blur-xl">
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.32em] text-indigo-500">Design Module</p>
+            <h1 className="mt-3 text-4xl font-black tracking-tight text-slate-950">Website Theme</h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+              Customize colors, fonts, layout, and design elements for your website with a live preview.
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-4">
+            {success && <span className="text-xs font-black text-emerald-600 animate-bounce">บันทึกสำเร็จ!</span>}
+            {isDirty && <span className="text-[10px] font-bold text-amber-500 uppercase tracking-widest px-2 py-1 bg-amber-50 rounded">ยังไม่ได้บันทึก</span>}
+            <button
+              onClick={handleSave}
+              disabled={loading || !isDirty}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-indigo-100 hover:bg-indigo-700 disabled:opacity-50 transition-all"
+            >
+              {loading ? '...' : 'บันทึกการตั้งค่า'}
+            </button>
+          </div>
         </div>
       </header>
 
@@ -183,10 +189,10 @@ export default function DesignPage() {
                       {theme.logoUrl ? <img src={theme.logoUrl} className="h-full w-full object-contain" alt="Logo" /> : <span className="text-xs text-slate-400">Logo</span>}
                     </button>
                     <div className="flex-1">
-                       <p className="text-[10px] text-slate-400">แนะนำโปร่งใส (SVG/PNG)</p>
+                       <p className="text-[10px] text-slate-400">แนะนำโปรแกรมใส่ (SVG/PNG)</p>
                        <input ref={logoInputRef} type="file" className="hidden" onChange={(e) => handleFileUpload(e, 'logoUrl')} />
                        {uploading === 'logoUrl' && <p className="text-[10px] font-bold text-indigo-500">กำลังอัปโหลด...</p>}
-                       {theme.logoUrl && <button onClick={() => set('logoUrl', '')} className="text-[10px] text-rose-500 font-bold">ลบออก</button>}
+                       {theme.logoUrl && <button onClick={() => set('logoUrl', '')} className="text-[10px] text-rose-500 font-bold">ลบ</button>}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -265,7 +271,7 @@ export default function DesignPage() {
                  </div>
               </section>
 
-              {/* Footer Settings Section Added Back Correctlly */}
+              {/* Footer Settings Section */}
               <section className="space-y-4">
                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">5. Footer Settings</h3>
                  <div className="space-y-4 rounded-xl bg-slate-50 p-4 ring-1 ring-slate-200/50">
@@ -336,3 +342,4 @@ function ColorPicker({ label, value, onChange }: { label: string; value: string;
     </div>
   );
 }
+

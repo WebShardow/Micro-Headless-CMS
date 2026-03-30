@@ -1,4 +1,4 @@
-import AdminSidebar from './AdminSidebar';
+﻿import AdminSidebar from './AdminSidebar';
 
 export default function AdminLayout({
   children,
@@ -6,13 +6,10 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-slate-100">
-      {/* Sidebar - Fixed width, no shrinking */}
+    <div className="admin-shell flex h-screen w-screen overflow-hidden bg-white">
       <AdminSidebar />
-
-      {/* Main Content Area - Taking remaining space and scrollable */}
-      <div className="relative flex flex-1 flex-col min-w-0 overflow-hidden">
-        {children}
+      <div className="admin-main relative flex min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="relative flex min-h-0 flex-1 flex-col bg-white">{children}</div>
       </div>
     </div>
   );
